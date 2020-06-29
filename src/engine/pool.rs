@@ -1,12 +1,11 @@
 use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 use std::thread::JoinHandle;
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: Sender<Job>,
-    count: Arc<(Mutex<usize>, Condvar)>,
 }
 
 impl ThreadPool {
@@ -22,12 +21,12 @@ impl ThreadPool {
         let mut workers = Vec::with_capacity(threads);
 
         for n in 0..threads {
+            println!("Creating worker {}", n);
             workers.push(Worker::new(n, Arc::clone(&rx)));
         }
         ThreadPool {
             workers: workers,
             sender: tx,
-            count: Arc::new((Mutex::new(0), Condvar::new())),
         }
     }
 
@@ -43,13 +42,16 @@ impl ThreadPool {
             .expect("Thread shut down too early");
     }
 
-    pub fn join(&self) {
-        println!("joining")
+    pub fn join(self) {
+        println!("Joining");
+        for worker in self.workers {
+            worker.join();
+        }
     }
 }
 
 struct Worker {
-    id: usize,
+    _id: usize,
     handle: JoinHandle<()>,
 }
 
@@ -69,9 +71,12 @@ impl Worker {
             }
         });
         Worker {
-            id: id,
+            _id: id,
             handle: handle,
         }
+    }
+    fn join(self) {
+        self.handle.join().expect("Worker failed to join");
     }
 }
 

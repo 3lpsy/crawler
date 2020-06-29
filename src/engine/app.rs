@@ -17,9 +17,9 @@ impl App {
         let urls = self.config.urls.clone();
         for url in urls {
             pool.execute(move || {
+                println!("Starting callback: {:?}", url);
                 sleep(Duration::from_secs(4));
-                println!("{:?}", url);
-                println!("Done....");
+                println!("Callback done: {:?}", url);
             });
         }
         pool.join();
